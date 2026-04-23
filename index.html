@@ -15,10 +15,20 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 // ─── SUPABASE FUNCTIONS ───
 async function sbGetSettings(){
   const {data} = await sb.from('settings').select('*').eq('id',1).single();
+  if(data && data.bgmusic!==undefined){
+    data.bgMusic=data.bgmusic; // map lowercase column → camelCase key
+  }
   return data;
 }
 async function sbSaveSettings(obj){
-  await sb.from('settings').upsert({id:1,...obj},{onConflict:'id'});
+  // แปลง key ให้ตรงกับ column ใน Supabase (lowercase)
+  const mapped={id:1};
+  if(obj.set!==undefined) mapped.set=obj.set;
+  if(obj.rules!==undefined) mapped.rules=obj.rules;
+  if(obj.theme!==undefined) mapped.theme=obj.theme;
+  if(obj.email!==undefined) mapped.email=obj.email;
+  if(obj.bgMusic!==undefined) mapped.bgmusic=obj.bgMusic;
+  await sb.from('settings').upsert(mapped,{onConflict:'id'});
 }
 async function sbGetSubmissions(){
   const {data} = await sb.from('submissions').select('*').order('created_at',{ascending:false});
@@ -1019,7 +1029,9 @@ async function load(){
   sbListenSettings(async (newSettings)=>{
     if(newSettings.set && Object.keys(newSettings.set).length > 0) D.set=Object.assign({...D.set}, newSettings.set);
     if(newSettings.rules) D.rules=newSettings.rules;
-    if(newSettings.bgMusic!==undefined) D.bgMusic=newSettings.bgMusic;
+    // Supabase column ชื่อ bgmusic (lowercase)
+    const _bgVal = newSettings.bgmusic!==undefined ? newSettings.bgmusic : newSettings.bgMusic;
+    if(_bgVal!==undefined) D.bgMusic=_bgVal;
     if(newSettings.visitors!==undefined){
       const el=document.getElementById('lvisit');
       if(el) el.textContent=newSettings.visitors;
