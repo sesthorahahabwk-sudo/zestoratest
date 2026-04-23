@@ -1095,6 +1095,9 @@ function initLoader(){
       _welcomeAudio.currentTime=0;
       _welcomeAudio.play().catch(e=>console.warn('audio:',e));
     }
+    // ── เริ่มเพลงพื้นหลังทันทีใน user gesture (ก่อน setTimeout) ──
+    // เพื่อให้ผ่าน Autoplay Policy ของ browser มือถือ
+    startBgMusic();
     const tap=document.getElementById('ld-tap');
     if(tap)tap.style.opacity='0';
     setTimeout(()=>{
@@ -1109,8 +1112,6 @@ function initLoader(){
         // แสดง countdown ก่อนเสมอ แล้วค่อยเช็คว่าต้องไป landing ไหม
         showCountdown();
         setTimeout(()=>checkOpen(), 100);
-        // Start bg music if set
-        startBgMusic();
         // Init visual effects
         startGlitchLoop();
         addSoundToButtons();
