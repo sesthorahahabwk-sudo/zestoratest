@@ -821,8 +821,12 @@ details summary::-webkit-details-marker{display:none}
           <input class="sinput" id="ejs-service" type="text" placeholder="service_xxxxxxx" style="max-width:100%">
         </div>
         <div class="fgrp" style="margin-bottom:12px">
-          <label class="flabel">Template ID</label>
+          <label class="flabel">Template ID (คนผ่าน ✅)</label>
           <input class="sinput" id="ejs-template" type="text" placeholder="template_xxxxxxx" style="max-width:100%">
+        </div>
+        <div class="fgrp" style="margin-bottom:12px">
+          <label class="flabel">Template ID (คนไม่ผ่าน ❌)</label>
+          <input class="sinput" id="ejs-template-fail" type="text" placeholder="template_xxxxxxx" style="max-width:100%">
         </div>
         <div class="fgrp" style="margin-bottom:12px">
           <label class="flabel">อีเมลแอดมิน (รับการแจ้งเตือน)</label>
@@ -1498,6 +1502,7 @@ function loadSet(){
   document.getElementById('ejs-pubkey').value=D.email.pubkey||D.email.key||'';
   document.getElementById('ejs-service').value=D.email.service||'';
   document.getElementById('ejs-template').value=D.email.template||'';
+  document.getElementById('ejs-template-fail').value=D.email.template_fail||'';
   document.getElementById('ejs-admin').value=D.email.admin||'';
   if(D.email&&(D.email.pubkey||D.email.key)){try{emailjs.init(D.email.pubkey||D.email.key);}catch(e){}}
   if(D.discord&&D.discord.webhook){const dw=document.getElementById('dc-webhook');if(dw)dw.value=D.discord.webhook;}
@@ -1606,6 +1611,7 @@ function saveEmailConfig(){
     pubkey: document.getElementById('ejs-pubkey').value.trim(),
     service: document.getElementById('ejs-service').value.trim(),
     template: document.getElementById('ejs-template').value.trim(),
+    template_fail: document.getElementById('ejs-template-fail').value.trim(),
     admin: document.getElementById('ejs-admin').value.trim()
   };
   save();
