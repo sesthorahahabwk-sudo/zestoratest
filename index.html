@@ -1046,7 +1046,7 @@ async function load(){
     }
     const subs = await sbGetSubmissions();
     D.subs = subs.map(s=>({
-      num:s.num, ig:s.ig, nick:s.nick, email:s.email,
+      id:s.id, num:s.num, ig:s.ig, nick:s.nick, email:s.email,
       answers:s.answers, status:s.status,
       ts:s.created_at, gen:s.gen, note:s.note||''
     }));
@@ -1074,7 +1074,7 @@ async function load(){
   });
   sbListenSubmissions(async ()=>{
     const subs=await sbGetSubmissions();
-    D.subs=subs.map(s=>({num:s.num,ig:s.ig,nick:s.nick,email:s.email,answers:s.answers,status:s.status,ts:s.created_at,gen:s.gen,note:s.note||''}));
+    D.subs=subs.map(s=>({id:s.id,num:s.num,ig:s.ig,nick:s.nick,email:s.email,answers:s.answers,status:s.status,ts:s.created_at,gen:s.gen,note:s.note||''}));
     updateCounts();
     saveLocal();
     if(adminIn) renderSubs();
@@ -1426,14 +1426,20 @@ function renderSubs(){
   }).join('');
 }
 function approve(i){
-  D.subs[i].status='passed';save();renderSubs();renderLB();playSuccess();
+  D.subs[i].status='passed';
+  saveLocal();
+  if(D.subs[i].id) sbUpdateSubmission(D.subs[i].id,{status:'passed'}).catch(e=>console.warn('approve error:',e));
+  renderSubs();renderLB();playSuccess();
   sendDCStatus(D.subs[i],true);
   emailNotify(D.subs[i],true);
   toast('อนุมัติแล้ว ✦',`@${D.subs[i].ig} ผ่านการทดสอบ`);
   updateCounts();
 }
 function reject(i){
-  D.subs[i].status='rejected';save();renderSubs();
+  D.subs[i].status='rejected';
+  saveLocal();
+  if(D.subs[i].id) sbUpdateSubmission(D.subs[i].id,{status:'rejected'}).catch(e=>console.warn('reject error:',e));
+  renderSubs();
   sendDCStatus(D.subs[i],false);
   emailNotify(D.subs[i],false);
   toast('ปฏิเสธแล้ว',`@${D.subs[i].ig} ไม่ผ่าน`);
@@ -1441,7 +1447,11 @@ function reject(i){
 
 function deleteSub(i){
   if(!confirm('ลบผู้สมัครคนนี้ออกเลยไหมครับ?'))return;
-  D.subs.splice(i,1);save();renderSubs();renderLB();updateCounts();
+  const sbId=D.subs[i].id;
+  D.subs.splice(i,1);
+  saveLocal();
+  if(sbId) sbDeleteSubmission(sbId).catch(e=>console.warn('delete error:',e));
+  renderSubs();renderLB();updateCounts();
   toast('ลบแล้ว','ลบผู้สมัครออกเรียบร้อย');
 }
 function clearAllSubs(){
@@ -1484,7 +1494,9 @@ function exportEmails(){
   navigator.clipboard.writeText(emails).then(()=>toast('คัดลอกแล้ว!',`${p.length} อีเมลถูก copy แล้ว`)).catch(()=>toast('ลอง copy เอง',emails));
 }
 function saveNote(i,val){
-  D.subs[i].note=val;save();
+  D.subs[i].note=val;
+  saveLocal();
+  if(D.subs[i].id) sbUpdateSubmission(D.subs[i].id,{note:val}).catch(e=>console.warn('note error:',e));
 }
 function loadSet(){
   const s=D.set;
