@@ -59,7 +59,16 @@ async function sbGetVisitors(){
 // Realtime: sync settings changes to all users
 function sbListenSettings(cb){
   sb.channel('settings-changes')
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'settings'}, payload=>cb(payload.new))
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'settings'}, payload=>{
+      cb(payload.new);
+      // อัปเดต visitor count แบบ realtime เมื่อมีคนเข้าใหม่
+      if(payload.new && payload.new.visitors !== undefined){
+        const el=document.getElementById('lvisit');
+        if(el) el.textContent=payload.new.visitors;
+        const stv=document.getElementById('st-visit');
+        if(stv) stv.textContent=payload.new.visitors;
+      }
+    })
     .subscribe();
 }
 function sbListenSubmissions(cb){
@@ -2105,6 +2114,15 @@ async function updateVisitorCount(){
     // update admin stat too
     const stv=document.getElementById('st-visit');
     if(stv) stv.textContent=v;
+    // Subscribe realtime เพื่อรับยอดใหม่ทันทีเมื่อมีคนเข้า
+    sb.channel('visitor-live')
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'settings'}, payload=>{
+        if(payload.new && payload.new.visitors !== undefined){
+          if(el) el.textContent=payload.new.visitors;
+          if(stv) stv.textContent=payload.new.visitors;
+        }
+      })
+      .subscribe();
   }catch(e){}
 }
 function setPbar(pct){document.getElementById('pfill').style.width=pct+'%';}
@@ -2133,8 +2151,16 @@ window.addEventListener('load',async ()=>{
     document.getElementById('s-load').style.display='none';
     show('s-alog');
     document.getElementById('pbar').style.display='block';
-    // load visitor count for admin
-    try{const v=await sbGetVisitors();const el=document.getElementById('st-visit');if(el)el.textContent=v;}catch(e){}
+    // load visitor count for admin + refresh realtime
+    try{
+      const v=await sbGetVisitors();
+      const el=document.getElementById('st-visit');
+      if(el) el.textContent=v;
+      // Refresh ทุก 15 วิสำหรับ admin
+      setInterval(async()=>{
+        try{const vv=await sbGetVisitors();if(el)el.textContent=vv;}catch(e){}
+      },15000);
+    }catch(e){}
   } else {
     initLoader();
     // Count visitor (non-admin only)
