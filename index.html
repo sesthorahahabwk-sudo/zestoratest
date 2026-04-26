@@ -67,6 +67,8 @@ function sbListenSettings(cb){
         if(el) el.textContent=payload.new.visitors;
         const stv=document.getElementById('st-visit');
         if(stv) stv.textContent=payload.new.visitors;
+        const hv=document.getElementById('hvisit');
+        if(hv) hv.textContent=payload.new.visitors;
       }
     })
     .subscribe();
@@ -456,9 +458,13 @@ details summary::-webkit-details-marker{display:none}
   <div class="hdr-logo">The Zestora</div>
   <div class="hdr-right">
     <div class="live-pill">
-      <span class="chip-dot" style="width:5px;height:5px;border-radius:50%;background:var(--g);flex-shrink:0"></span>
-      <span class="live-num" id="hcount">0</span>
-      <span style="font-size:11px;color:var(--tm)">คน</span>
+      <span class="chip-dot" style="width:5px;height:5px;border-radius:50%;background:var(--g);animation:pulse-dot 1.5s infinite;flex-shrink:0"></span>
+      <span class="live-num" id="honline">0</span>
+      <span style="font-size:11px;color:var(--tm)">ออนไลน์</span>
+      <span style="width:1px;height:14px;background:var(--bdr2);margin:0 4px"></span>
+      <span style="font-size:11px;color:var(--tm)">👁</span>
+      <span class="live-num" id="hvisit">0</span>
+      <span style="font-size:11px;color:var(--tm)">ผู้เยี่ยมชม</span>
     </div>
   </div>
 </header>
@@ -532,7 +538,7 @@ details summary::-webkit-details-marker{display:none}
       <p>แก๊งที่ไม่ใช่ทุกคนจะได้เข้า<br>พิสูจน์ตัวเองว่าคุณคือคนที่เราตามหา</p>
     </div>
     <div class="land-actions">
-      <button class="land-cta-main" onclick="startJourney()">
+      <button class="land-cta-main" id="land-cta" onclick="startJourney()">
         <div class="land-cta-circle">→</div>
         <div class="land-cta-label">
           <span class="cta-title">เริ่มสมัคร</span>
@@ -606,11 +612,10 @@ details summary::-webkit-details-marker{display:none}
       <span>—</span>
     </div>
     <div style="margin-top:32px">
-      <div class="count-box" style="display:inline-flex">
-        <div>
-          <div class="count-n" id="lvisit">0</div>
-          <div class="count-l">ผู้เยี่ยมชม</div>
-        </div>
+      <div style="display:inline-flex;align-items:center;gap:10px;padding:10px 22px;border:1px solid var(--bdr2);border-radius:99px;background:rgba(26,107,58,0.06)">
+        <span style="width:7px;height:7px;border-radius:50%;background:var(--g2);animation:pulse-dot 1.5s infinite;flex-shrink:0"></span>
+        <span style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--g2);line-height:1" id="lvisit-online">1</span>
+        <span style="font-size:12px;color:var(--td);letter-spacing:0.05em">คนกำลังดูอยู่ตอนนี้</span>
       </div>
     </div>
   </div>
@@ -696,6 +701,16 @@ details summary::-webkit-details-marker{display:none}
     <p style="font-size:10px;letter-spacing:0.3em;color:var(--tm);text-transform:uppercase">หมายเลขผู้สมัคร</p>
     <div class="done-num" id="done-n">#1</div>
     <p class="sub" style="font-size:12px;color:var(--tm);margin-top:8px">กรุณาเปิด Instagram เป็นสาธารณะด้วยนะครับ</p>
+
+    <!-- Story Download -->
+    <div style="margin-top:32px">
+      <p style="font-size:10px;letter-spacing:0.3em;color:var(--tm);text-transform:uppercase;margin-bottom:14px">แชร์ลง Instagram Story</p>
+      <canvas id="story-canvas" width="1080" height="1920" style="display:none"></canvas>
+      <div id="story-preview" style="width:160px;height:284px;margin:0 auto 16px;border-radius:16px;overflow:hidden;border:1px solid var(--bdr2);box-shadow:0 0 30px rgba(26,107,58,0.2)"></div>
+      <button class="btn btn-gold" onclick="downloadStory()" style="gap:10px">
+        <span>⬇</span> บันทึกรูป Story
+      </button>
+    </div>
   </div>
 </div>
 
@@ -711,7 +726,7 @@ details summary::-webkit-details-marker{display:none}
       <input class="finput" id="apwd" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button class="btn btn-gold btn-full" onclick="doLogin()">เข้าสู่ระบบ</button>
-    <button class="btn btn-ghost btn-full" onclick="show('s-land')" style="margin-top:8px">← กลับหน้าหลัก</button>
+    <button class="btn btn-ghost btn-full" onclick="checkOpen()" style="margin-top:8px">← กลับหน้าหลัก</button>
   </div>
 </div>
 
@@ -804,6 +819,7 @@ details summary::-webkit-details-marker{display:none}
             </div>
           </div>
           <div id="sched-preview" style="margin-top:14px;padding:12px 14px;background:var(--bg3);border-radius:8px;border:1px solid var(--bdr);font-size:12px;color:var(--td);line-height:2"></div>
+          <button class="btn btn-danger btn-sm" onclick="resetSchedule()" style="margin-top:12px;width:100%">🗑 รีเซ็ตตารางเวลาทั้งหมด</button>
         </div>
       </div>
       <div class="sset">
@@ -966,7 +982,7 @@ details summary::-webkit-details-marker{display:none}
       </div>
       <button class="btn btn-gold btn-full" onclick="checkStatus()">ค้นหา ✦</button>
       <div id="status-result" style="margin-top:24px"></div>
-      <button class="btn btn-ghost btn-sm" onclick="show('s-land')" style="margin-top:16px;width:100%">← กลับหน้าหลัก</button>
+      <button class="btn btn-ghost btn-sm" onclick="checkOpen()" style="margin-top:16px;width:100%">← กลับหน้าหลัก</button>
     </div>
   </div>
 </div>
@@ -983,7 +999,7 @@ details summary::-webkit-details-marker{display:none}
     </div>
     <div id="hall-list"><p style="color:var(--tm);font-size:14px;text-align:center">ยังไม่มีสมาชิกที่ผ่านการคัดเลือก</p></div>
     <div style="text-align:center;margin-top:32px">
-      <button class="btn btn-ghost btn-sm" onclick="show('s-land')">← กลับหน้าหลัก</button>
+      <button class="btn btn-ghost btn-sm" onclick="checkOpen()">← กลับหน้าหลัก</button>
     </div>
   </div>
 </div>
@@ -1083,8 +1099,7 @@ async function load(){
     updateAnnBanner();
     updateCounts();
     saveLocal();
-    const cdScr=document.getElementById('s-cd');
-    if(cdScr&&cdScr.classList.contains('on')&&!adminIn){checkOpen();}
+    if(!adminIn){checkOpen();}
   });
   sbListenSubmissions(async ()=>{
     const subs=await sbGetSubmissions();
@@ -1168,23 +1183,25 @@ function initLoader(){
 // CHECK OPEN / COUNTDOWN
 // ────────────────────────────────────────
 function checkOpen(){
+  // toggle ปิด = countdown เสมอ ไม่สนวันที่
+  if(!D.set.open){ showCountdown(); return; }
+  // toggle เปิด → เช็ควันที่
   if(D.set.openDt){
     const now=new Date();
     const open=new Date(D.set.openDt);
     const close=D.set.closeDt?new Date(D.set.closeDt):null;
-    if(now<open){
-      showCountdown();
-    } else if(!close||now<close){
-      if(D.set.open){show('s-land');updateAnnBanner();}
-      else{showCountdown();}
-    } else {
-      showCountdown();
-    }
-  } else {
-    // ไม่มีวันเวลา → ถ้า toggle เปิด ไป landing / ถ้าปิด countdown
-    if(D.set.open){show('s-land');updateAnnBanner();}
-    else{showCountdown();}
+    if(now<open){ showCountdown(); return; }
+    if(close&&now>=close){ showCountdown(); return; }
   }
+  // เปิดปกติ
+  show('s-land');
+  updateAnnBanner();
+  updateLandingCTA();
+}
+function updateLandingCTA(){
+  // ซ่อน/แสดงปุ่มเริ่มสมัครตาม toggle
+  const cta=document.getElementById('land-cta');
+  if(cta) cta.style.display=D.set.open?'':'none';
 }
 function updateAnnBanner(){
   const bar=document.getElementById('ann-bar');
@@ -1196,7 +1213,14 @@ function updateAnnBanner(){
 function showCountdown(){
   show('s-cd');
   document.getElementById('cd-gen-txt').textContent='THE ZESTORA Gen '+(D.set.gen||'1');
-  const target=D.set.openDt?new Date(D.set.openDt):null;
+
+  // target = openDt เฉพาะเมื่อ toggle เปิด และเวลายังไม่ถึง
+  let target = null;
+  if(D.set.open && D.set.openDt){
+    const t = new Date(D.set.openDt);
+    if(t > new Date()) target = t; // นับถอยหลังถึงเวลาเปิด
+  }
+
   const lbl=document.getElementById('cd-time-label');
   if(lbl&&target){
     const day=target.getDate().toString().padStart(2,'0');
@@ -1206,8 +1230,9 @@ function showCountdown(){
     const mm2=target.getMinutes().toString().padStart(2,'0');
     lbl.innerHTML=`เปิดรับสมัคร <span>${day}/${mon}/${yr} เวลา ${hh}:${mm2} น.</span>`;
   } else if(lbl){
-    lbl.innerHTML='<span>ยังไม่ได้กำหนดเวลา</span>';
+    lbl.innerHTML=D.set.open?'<span>ยังไม่ได้กำหนดเวลา</span>':'<span>ปิดรับสมัครชั่วคราว</span>';
   }
+
   if(cdTimer)clearInterval(cdTimer);
   cdTimer=setInterval(()=>{
     const now=new Date();
@@ -1218,7 +1243,8 @@ function showCountdown(){
     document.getElementById('cd-h').textContent=pad(hh);
     document.getElementById('cd-m').textContent=pad(mm);
     document.getElementById('cd-s').textContent=pad(ss);
-    if(diff===0&&target){clearInterval(cdTimer);if(D.set.open){show('s-land');updateAnnBanner();}}
+    // เมื่อนับถอยหลังถึง 0 และ toggle ยังเปิดอยู่ → เปิดหน้าสมัคร
+    if(diff===0&&target&&D.set.open){clearInterval(cdTimer);show('s-land');updateAnnBanner();updateLandingCTA();}
   },1000);
 }
 function pad(n){return String(n).padStart(2,'0');}
@@ -1263,9 +1289,16 @@ const PRETEST_AUDIO_B64 = 'data:audio/mp3;base64,//OExAAAAAAAAAAAAFhpbmcAAAAPAAA
 function startPretest(){
   show('s-pre');
   const msg='กรุณาตอบคำถามทั้งหมดด้วยความจริงใจ และเป็นความคิดเห็นจากตัวคุณเอง โดยไม่ใช้ AI หรือเครื่องมือช่วยในการคิดคำตอบ';
-  // Play custom audio
+  // Play custom audio — duck bgMusic, boost voice
   try{
     const aud = new Audio(PRETEST_AUDIO_B64);
+    aud.volume = 1.0;
+    // Lower bgMusic while speaking
+    if(_bgAudio){ _bgAudio.volume = Math.min(_bgAudio.volume, 0.06); }
+    aud.addEventListener('ended', ()=>{
+      // Restore bgMusic volume
+      if(_bgAudio){ _bgAudio.volume = (D.bgMusic&&D.bgMusic.vol)||0.3; }
+    });
     aud.play().catch(()=>{});
   }catch(e){}
   const el=document.getElementById('pre-txt');
@@ -1338,6 +1371,8 @@ async function submitTest(){
   D.subs.push(entry);saveLocal();updateCounts();
   show('s-done');
   document.getElementById('done-n').textContent='#'+num;
+  // Generate story image
+  setTimeout(()=>generateStory('#'+num, U.ig), 100);
   await sendDC(entry);
 }
 
@@ -1377,7 +1412,7 @@ function doLogin(){
   if(document.getElementById('apwd').value===APW){adminIn=true;show('s-adm');renderAdmin();}
   else toast('รหัสผ่านผิด','ลองใหม่อีกครั้งครับ');
 }
-function doLogout(){adminIn=false;show('s-land');}
+function doLogout(){adminIn=false;checkOpen();}
 function atab(t){
   document.querySelectorAll('.atab').forEach((b,i)=>{b.classList.toggle('on',['sub','lb','set','rul'][i]===t);});
   document.querySelectorAll('.apanel').forEach(p=>p.classList.remove('on'));
@@ -1572,6 +1607,16 @@ function updateSchedPreview(){
     `🟢 เปิดรับ: <b>${fmtDt(openDt)}</b><br>`+
     `🔴 ปิดรับ: <b>${fmtDt(closeDt)}</b><br>`+
     `📢 ประกาศผล: <b>${fmtDt(annDt)}</b>`;
+}
+function resetSchedule(){
+  if(!confirm('รีเซ็ตตารางเวลาทั้งหมด? (openDt, closeDt, annDt จะถูกล้าง)')) return;
+  D.set.openDt=''; D.set.closeDt=''; D.set.annDt='';
+  document.getElementById('s-open-dt').value='';
+  document.getElementById('s-close-dt').value='';
+  document.getElementById('s-ann-dt').value='';
+  save();
+  updateSchedPreview();
+  toast('รีเซ็ตแล้ว','ล้างตารางเวลาเรียบร้อย');
 }
 function saveSet(){
   D.set={
@@ -1774,13 +1819,23 @@ function checkStatus(){
   const msg=isPassed?`ยินดีด้วยครับ! @${found.ig} ผ่านการคัดเลือก Gen ${found.gen} แล้ว`:
     isRej?`ขอบคุณที่สมัครนะครับ รอบนี้ยังไม่ผ่านการคัดเลือก`:
     `กำลังรอการพิจารณาจากแอดมินครับ`;
+  const shareUrl = location.origin + location.pathname + '?ig=' + encodeURIComponent(found.ig);
   el.innerHTML=`<div style="padding:24px 20px;background:var(--bg2);border:1px solid ${isPassed?'var(--bdr2)':'var(--bdr)'};border-radius:var(--rg);text-align:center;${isPassed?'box-shadow:0 0 40px rgba(26,107,58,0.15)':''}">
     <div style="font-size:36px;color:${color};font-family:'Cormorant Garamond',serif;margin-bottom:10px">${icon}</div>
     <div style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--tm);margin-bottom:6px">@${found.ig}</div>
     <div style="font-size:18px;font-weight:500;color:${color};margin-bottom:8px">${statusTH}</div>
     <div style="font-size:13px;color:var(--td);line-height:1.7">${msg}</div>
     ${isPassed?`<div style="margin-top:16px;padding:10px 14px;background:rgba(26,107,58,0.08);border-radius:8px;border:1px solid var(--bdr2);font-size:12px;color:var(--g2)">Gen ${found.gen} · #${found.num}</div>`:''}
+    <button onclick="copyStatusLink('${shareUrl}')" style="margin-top:16px;width:100%;padding:10px 16px;background:transparent;border:1px solid var(--bdr2);border-radius:8px;color:var(--g2);font-size:12px;letter-spacing:0.2em;cursor:pointer;font-family:'DM Sans',sans-serif">🔗 คัดลอกลิงก์เช็คสถานะ</button>
   </div>`;
+}
+
+function copyStatusLink(url){
+  navigator.clipboard.writeText(url).then(()=>{
+    toast('คัดลอกแล้ว ✦','ส่งลิงก์ให้เพื่อนเช็คสถานะได้เลย');
+  }).catch(()=>{
+    prompt('คัดลอกลิงก์นี้:', url);
+  });
 }
 
 // ────────────────────────────────────────
@@ -2100,7 +2155,7 @@ function setBgVol(){
 function v(id){return (document.getElementById(id)||{}).value||'';}
 function updateCounts(){
   const n=D.subs.length, p=D.subs.filter(s=>s.status==='passed').length;
-  document.getElementById('hcount').textContent=n;
+  const hc=document.getElementById('hcount'); if(hc) hc.textContent=n;
   document.getElementById('lcount').textContent=n;
   document.getElementById('lpass').textContent=p;
   updateSlotBar();
@@ -2111,18 +2166,43 @@ async function updateVisitorCount(){
     const v = await sbIncrementVisitor();
     const el=document.getElementById('lvisit');
     if(el) el.textContent=v;
-    // update admin stat too
     const stv=document.getElementById('st-visit');
     if(stv) stv.textContent=v;
+    const hv=document.getElementById('hvisit');
+    if(hv) hv.textContent=v;
     // Subscribe realtime เพื่อรับยอดใหม่ทันทีเมื่อมีคนเข้า
     sb.channel('visitor-live')
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'settings'}, payload=>{
         if(payload.new && payload.new.visitors !== undefined){
           if(el) el.textContent=payload.new.visitors;
           if(stv) stv.textContent=payload.new.visitors;
+          if(hv) hv.textContent=payload.new.visitors;
         }
       })
       .subscribe();
+  }catch(e){}
+}
+
+// ─── REALTIME PRESENCE (คนออนไลน์ตอนนี้) ───
+function initPresence(){
+  try{
+    const roomChannel = sb.channel('online-room', {
+      config: { presence: { key: Math.random().toString(36).slice(2,10) } }
+    });
+    roomChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = roomChannel.presenceState();
+        const count = Object.keys(state).length;
+        const el = document.getElementById('honline');
+        if(el) el.textContent = count;
+        const el2 = document.getElementById('lvisit-online');
+        if(el2) el2.textContent = count;
+      })
+      .subscribe(async (status) => {
+        if(status === 'SUBSCRIBED'){
+          await roomChannel.track({ online_at: new Date().toISOString() });
+        }
+      });
   }catch(e){}
 }
 function setPbar(pct){document.getElementById('pfill').style.width=pct+'%';}
@@ -2147,6 +2227,17 @@ function toast(title,msg){
 // ────────────────────────────────────────
 window.addEventListener('load',async ()=>{
   await load();
+  // เช็ค ?ig=xxx จาก URL → เปิดหน้าสถานะอัตโนมัติ
+  const urlParams=new URLSearchParams(location.search);
+  const igParam=urlParams.get('ig');
+  if(igParam){
+    document.getElementById('s-load').style.display='none';
+    show('s-status');
+    document.getElementById('status-ig').value=igParam;
+    // รอ data โหลดก่อนค่อย checkStatus
+    setTimeout(()=>checkStatus(), 400);
+    return;
+  }
   if(location.hash==='#admin'){
     document.getElementById('s-load').style.display='none';
     show('s-alog');
@@ -2165,8 +2256,175 @@ window.addEventListener('load',async ()=>{
     initLoader();
     // Count visitor (non-admin only)
     updateVisitorCount();
+    // Track presence (online now)
+    initPresence();
   }
 });
+
+// ─── STORY GENERATOR ───
+function generateStory(num, ig){
+  const canvas = document.getElementById('story-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 1080, H = 1920;
+  const PAD = 80;
+
+  // ── Background ──
+  ctx.fillStyle = '#080808';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle noise-like grain via tiny dots (optional light texture)
+  // Top ambient orb — green, centered upper area
+  const orb1 = ctx.createRadialGradient(W/2, H*0.28, 0, W/2, H*0.28, 620);
+  orb1.addColorStop(0, 'rgba(26,107,58,0.18)');
+  orb1.addColorStop(0.5, 'rgba(15,74,40,0.07)');
+  orb1.addColorStop(1, 'transparent');
+  ctx.fillStyle = orb1;
+  ctx.fillRect(0, 0, W, H);
+
+  // Bottom ambient orb
+  const orb2 = ctx.createRadialGradient(W*0.7, H*0.82, 0, W*0.7, H*0.82, 420);
+  orb2.addColorStop(0, 'rgba(26,107,58,0.1)');
+  orb2.addColorStop(1, 'transparent');
+  ctx.fillStyle = orb2;
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Thin border frame ──
+  ctx.strokeStyle = 'rgba(26,107,58,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(44, 44, W-88, H-88);
+
+  // ── Corner brackets (like the web UI) ──
+  ctx.strokeStyle = 'rgba(42,153,85,0.7)';
+  ctx.lineWidth = 3;
+  const BL = 64; // bracket length
+  const BO = 44; // bracket offset (same as frame)
+  [[BO,BO,1,1],[W-BO,BO,-1,1],[BO,H-BO,1,-1],[W-BO,H-BO,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+dx*BL,y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+dy*BL); ctx.stroke();
+  });
+
+  // ── Eyebrow label ──
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(42,153,85,0.55)';
+  ctx.font = '400 28px Arial';
+  ctx.letterSpacing = '0.55em';
+  ctx.fillText('EXCLUSIVE GANG', W/2, 220);
+
+  // ── Thin horizontal rule under eyebrow ──
+  const ruleGrad = ctx.createLinearGradient(PAD*2, 0, W-PAD*2, 0);
+  ruleGrad.addColorStop(0, 'transparent');
+  ruleGrad.addColorStop(0.5, 'rgba(26,107,58,0.4)');
+  ruleGrad.addColorStop(1, 'transparent');
+  ctx.strokeStyle = ruleGrad;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD*2, 252); ctx.lineTo(W-PAD*2, 252); ctx.stroke();
+
+  // ── THE (large, light weight) ──
+  ctx.fillStyle = '#f0f5f2';
+  ctx.font = '300 280px Georgia';
+  ctx.letterSpacing = '0.06em';
+  ctx.fillText('THE', W/2, 660);
+
+  // ── ZESTORA (italic green) ──
+  ctx.fillStyle = '#2a9955';
+  ctx.font = 'italic 300 210px Georgia';
+  ctx.letterSpacing = '0.01em';
+  ctx.fillText('ZESTORA', W/2, 890);
+
+  // ── Ornament divider (dot + lines) ──
+  const midY = 980;
+  ctx.strokeStyle = 'rgba(26,107,58,0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(W/2-180, midY); ctx.lineTo(W/2-24, midY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W/2+24, midY); ctx.lineTo(W/2+180, midY); ctx.stroke();
+  ctx.fillStyle = '#1a6b3a';
+  ctx.beginPath(); ctx.arc(W/2, midY, 6, 0, Math.PI*2); ctx.fill();
+
+  // ── Applicant card ──
+  const cardX = PAD*2, cardY = 1060, cardW = W - PAD*4, cardH = 220;
+  // card bg gradient
+  const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX+cardW, cardY+cardH);
+  cardGrad.addColorStop(0, 'rgba(26,107,58,0.10)');
+  cardGrad.addColorStop(1, 'rgba(8,8,8,0.0)');
+  ctx.fillStyle = cardGrad;
+  ctx.beginPath();
+  ctx.roundRect(cardX, cardY, cardW, cardH, 16);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(26,107,58,0.38)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(cardX, cardY, cardW, cardH, 16);
+  ctx.stroke();
+
+  // APPLICANT NO. label
+  ctx.fillStyle = 'rgba(240,245,242,0.28)';
+  ctx.font = '400 22px Arial';
+  ctx.letterSpacing = '0.45em';
+  ctx.fillText('APPLICANT NO.', W/2, cardY + 72);
+
+  // Number
+  ctx.fillStyle = '#2a9955';
+  ctx.font = '300 110px Georgia';
+  ctx.letterSpacing = '0.02em';
+  ctx.fillText(num||'#1', W/2, cardY + 185);
+
+  // ── Submission message ──
+  const igHandle = ig ? '@'+ig : '';
+  // line 1: "คุณ @ig"
+  ctx.fillStyle = 'rgba(240,245,242,0.85)';
+  ctx.font = '400 46px Arial';
+  ctx.letterSpacing = '0.01em';
+  ctx.fillText(igHandle, W/2, 1370);
+
+  // line 2: "ได้สมัครและส่งการทดสอบ"
+  ctx.fillStyle = 'rgba(240,245,242,0.65)';
+  ctx.font = '300 40px Arial';
+  ctx.letterSpacing = '0.01em';
+  ctx.fillText('ได้สมัครและส่งการทดสอบ', W/2, 1430);
+
+  // line 3: "THE ZESTORA เรียบร้อย" — green accent
+  ctx.fillStyle = '#2a9955';
+  ctx.font = 'italic 300 42px Georgia';
+  ctx.letterSpacing = '0.02em';
+  ctx.fillText('THE ZESTORA เรียบร้อย', W/2, 1490);
+
+  // ── Rule above quote ──
+  ctx.strokeStyle = 'rgba(26,107,58,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD*2.5, 1555); ctx.lineTo(W-PAD*2.5, 1555); ctx.stroke();
+
+  // ── English quote ──
+  ctx.fillStyle = 'rgba(42,153,85,0.5)';
+  ctx.font = 'italic 34px Georgia';
+  ctx.letterSpacing = '0.03em';
+  ctx.fillText('"Only the chosen ones get in."', W/2, 1620);
+
+  // ── Bottom footer ──
+  ctx.fillStyle = 'rgba(240,245,242,0.15)';
+  ctx.font = '300 24px Arial';
+  ctx.letterSpacing = '0.4em';
+  ctx.fillText('THE ZESTORA · GEN 6', W/2, H-80);
+
+  // ── Update preview ──
+  const preview=document.getElementById('story-preview');
+  if(preview){
+    preview.innerHTML='';
+    const img=document.createElement('img');
+    img.src=canvas.toDataURL('image/png');
+    img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:12px';
+    preview.appendChild(img);
+  }
+}
+
+function downloadStory(){
+  const canvas=document.getElementById('story-canvas');
+  if(!canvas) return;
+  const link=document.createElement('a');
+  link.download='thezestora-story.png';
+  link.href=canvas.toDataURL('image/png');
+  link.click();
+}
 </script>
 </body>
 </html>
