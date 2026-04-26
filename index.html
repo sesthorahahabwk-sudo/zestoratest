@@ -17,6 +17,7 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 async function sbGetSettings(){
   const {data} = await sb.from('settings').select('*').eq('id',1).single();
   if(data && data.bgmusic!==undefined){ data.bgMusic=data.bgmusic; }
+  // FIX: map discord column กลับมาถูกต้อง (เดิมใส่เป็น discordData ทำให้ไม่ถูก restore)
   if(data && data.discord!==undefined){ data.discordData=data.discord; }
   return data;
 }
@@ -1041,7 +1042,11 @@ async function load(){
       if(settings.rules) D.rules = settings.rules;
       if(settings.theme) D.theme = settings.theme;
       if(settings.email) D.email = Object.assign({key:'',admin:''}, settings.email);
+      // FIX: init emailjs ทันทีหลังโหลด config จาก Supabase
+      if(D.email && (D.email.pubkey||D.email.key)){try{emailjs.init(D.email.pubkey||D.email.key);}catch(e){}}
       if(settings.bgMusic !== undefined) D.bgMusic = settings.bgMusic;
+      // FIX: restore discord webhook จาก Supabase
+      if(settings.discord !== undefined) D.discord = settings.discord;
       applyStoredTheme();
     }
     const subs = await sbGetSubmissions();
@@ -1338,7 +1343,10 @@ async function sendDC(e){
     color:0x9B7E4A,
     footer:{text:`ZESTORA TEST SYSTEM · Gen ${e.gen} · คนที่ ${e.num}`}
   }]};
-  try{await fetch(getWH(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),mode:'no-cors'});}catch(err){console.warn('DC:',err);}
+  try{
+    const res = await fetch(getWH(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok) console.warn('DC send failed:',res.status);
+  }catch(err){console.warn('DC:',err);}
 }
 async function sendDCStatus(e,ok){
   const body={embeds:[{
@@ -1346,7 +1354,10 @@ async function sendDCStatus(e,ok){
     description:`**ชื่อเล่น:** ${e.nick}\n**Gen:** ${e.gen}\n**สถานะ:** ${ok?'ผ่าน ✦':'ไม่ผ่าน'}`,
     color:ok?0x5DBA7A:0xCC4455
   }]};
-  try{await fetch(getWH(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),mode:'no-cors'});}catch(err){console.warn('DC:',err);}
+  try{
+    const res = await fetch(getWH(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok) console.warn('DC status send failed:',res.status);
+  }catch(err){console.warn('DC:',err);}
 }
 
 // ────────────────────────────────────────
@@ -1708,7 +1719,7 @@ async function testDC(){
   const st=document.getElementById('dc-status');
   st.innerHTML='<span style="color:var(--tm)">⏳ กำลังส่ง...</span>';
   try{
-    await fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:'🧪 ทดสอบ THE ZESTORA Discord Webhook สำเร็จแล้วครับ ✦'}),mode:'no-cors'});
+    await fetch(wh,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:'🧪 ทดสอบ THE ZESTORA Discord Webhook สำเร็จแล้วครับ ✦'})});
     st.innerHTML='<span style="color:var(--g2)">✓ ส่งแล้ว — เช็ค Discord channel ได้เลย</span>';
     toast('ส่งแล้ว','เช็ค Discord ได้เลยครับ');
   }catch(e){
