@@ -1099,7 +1099,11 @@ async function load(){
     updateAnnBanner();
     updateCounts();
     saveLocal();
-    if(!adminIn){checkOpen();}
+    // Don't disrupt user if they're currently filling in the form or doing the test
+    const activeFormScreens = ['s-form','s-pre','s-test','s-done'];
+    const currentScreen = document.querySelector('.scr.on');
+    const inFormFlow = currentScreen && activeFormScreens.includes(currentScreen.id);
+    if(!adminIn && !inFormFlow){checkOpen();}
   });
   sbListenSubmissions(async ()=>{
     const subs=await sbGetSubmissions();
