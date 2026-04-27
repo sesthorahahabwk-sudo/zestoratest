@@ -443,9 +443,73 @@ details summary::-webkit-details-marker{display:none}
 .sdot{width:6px;height:6px;border-radius:3px;background:var(--bdr);transition:all 0.3s;flex-shrink:0}
 .sdot.cur{background:var(--g2);width:20px}
 .sdot.dn{background:var(--g3)}
+
+/* ─── PAGE TRANSITION ─── */
+@keyframes scrFadeIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.scr.on{animation:scrFadeIn 0.45s cubic-bezier(0.16,1,0.3,1) both}
+
+/* ─── PARTICLE CANVAS ─── */
+#particle-canvas{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0.5}
+
+/* ─── SCROLL REVEAL ─── */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity 0.7s cubic-bezier(0.16,1,0.3,1),transform 0.7s cubic-bezier(0.16,1,0.3,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-d1{transition-delay:0.08s}
+.reveal-d2{transition-delay:0.16s}
+.reveal-d3{transition-delay:0.24s}
+.reveal-d4{transition-delay:0.32s}
+
+/* ─── GLITCH TITLE (enhanced) ─── */
+@keyframes glitchClip1{
+  0%,100%{clip-path:inset(0 0 95% 0);transform:translateX(0)}
+  25%{clip-path:inset(20% 0 55% 0);transform:translateX(-5px)}
+  50%{clip-path:inset(55% 0 25% 0);transform:translateX(5px)}
+  75%{clip-path:inset(80% 0 5% 0);transform:translateX(-3px)}
+}
+@keyframes glitchClip2{
+  0%,100%{clip-path:inset(90% 0 0 0);transform:translateX(0)}
+  25%{clip-path:inset(50% 0 25% 0);transform:translateX(5px)}
+  50%{clip-path:inset(15% 0 70% 0);transform:translateX(-5px)}
+  75%{clip-path:inset(5% 0 80% 0);transform:translateX(3px)}
+}
+#main-title{position:relative}
+#main-title::before,#main-title::after{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:0;
+}
+#main-title.active::before{
+  content:attr(data-glitch);
+  color:rgba(42,153,85,0.75);left:3px;top:0;
+  font-family:'Cormorant Garamond',serif;font-size:inherit;font-weight:inherit;line-height:inherit;
+  animation:glitchClip1 0.28s steps(2) forwards;opacity:1;
+}
+#main-title.active::after{
+  content:attr(data-glitch);
+  color:rgba(240,245,242,0.4);left:-3px;top:0;
+  font-family:'Cormorant Garamond',serif;font-size:inherit;font-weight:inherit;line-height:inherit;
+  animation:glitchClip2 0.28s steps(2) forwards;opacity:1;
+}
+
+/* ─── CARD HOVER GLOW (Hall) ─── */
+.hall-card{
+  background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--rg);
+  padding:18px;text-align:center;position:relative;
+  transition:transform 0.3s cubic-bezier(0.16,1,0.3,1),box-shadow 0.3s,border-color 0.3s;
+}
+.hall-card:hover{
+  transform:translateY(-5px) scale(1.025);
+  box-shadow:0 0 36px rgba(26,107,58,0.25),0 10px 28px rgba(0,0,0,0.45);
+  border-color:var(--bdr2);
+}
+.hall-card.hall-top{border-color:var(--bdr2);box-shadow:0 0 24px rgba(26,107,58,0.15)}
+.hall-card.hall-top:hover{box-shadow:0 0 56px rgba(26,107,58,0.4),0 12px 36px rgba(0,0,0,0.55)}
+
+/* ─── CURSOR GLOW ─── */
+#cursor-glow{position:fixed;pointer-events:none;z-index:9996;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(26,107,58,0.07) 0%,transparent 70%);transform:translate(-50%,-50%);transition:opacity 0.3s;opacity:0}
 </style>
 </head>
 <body>
+<canvas id="particle-canvas"></canvas>
+<div id="cursor-glow"></div>
 
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
@@ -529,7 +593,7 @@ details summary::-webkit-details-marker{display:none}
   <!-- Main content -->
   <div class="land-body">
     <div class="land-eyebrow">Exclusive · Members Only</div>
-    <div class="land-title" id="main-title">
+    <div class="land-title" id="main-title" data-glitch="THE ZESTORA">
       <span class="big">THE</span>
       <span class="big italic">ZESTORA</span>
     </div>
@@ -537,6 +601,8 @@ details summary::-webkit-details-marker{display:none}
     <div class="land-desc">
       <p>แก๊งที่ไม่ใช่ทุกคนจะได้เข้า<br>พิสูจน์ตัวเองว่าคุณคือคนที่เราตามหา</p>
     </div>
+    <!-- วันปิดรับเทส + ประกาศผล บนหน้า landing -->
+    <div id="land-sched-info" style="margin-bottom:24px;display:flex;flex-direction:column;gap:8px"></div>
     <div class="land-actions">
       <button class="land-cta-main" id="land-cta" onclick="startJourney()">
         <div class="land-cta-circle">→</div>
@@ -611,6 +677,8 @@ details summary::-webkit-details-marker{display:none}
     <div class="cd-date-badge" id="cd-time-label">
       <span>—</span>
     </div>
+    <!-- ปิดรับเทส + ประกาศผล -->
+    <div id="cd-sched-info" style="display:none;margin-top:20px;flex-direction:column;gap:10px;align-items:center"></div>
     <div style="margin-top:32px">
       <div style="display:inline-flex;align-items:center;gap:10px;padding:10px 22px;border:1px solid var(--bdr2);border-radius:99px;background:rgba(26,107,58,0.06)">
         <span style="width:7px;height:7px;border-radius:50%;background:var(--g2);animation:pulse-dot 1.5s infinite;flex-shrink:0"></span>
@@ -723,7 +791,10 @@ details summary::-webkit-details-marker{display:none}
     <p class="sub" style="font-size:12px;margin-bottom:28px">เฉพาะแอดมิน ZESTORA เท่านั้น</p>
     <div class="fgrp">
       <label class="flabel">รหัสผ่าน</label>
-      <input class="finput" id="apwd" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <div style="position:relative">
+        <input class="finput" id="apwd" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" style="padding-right:44px">
+        <button type="button" id="apwd-eye" onclick="togglePwdEye()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--td);font-size:18px;padding:4px;line-height:1;transition:color 0.2s" title="แสดง/ซ่อนรหัสผ่าน">👁</button>
+      </div>
     </div>
     <button class="btn btn-gold btn-full" onclick="doLogin()">เข้าสู่ระบบ</button>
     <button class="btn btn-ghost btn-full" onclick="checkOpen()" style="margin-top:8px">← กลับหน้าหลัก</button>
@@ -865,51 +936,45 @@ details summary::-webkit-details-marker{display:none}
         <div id="email-status" style="margin-top:10px;font-size:12px;color:var(--tm)"></div>
       </div>
       <div class="sset">
-        <div class="sset-title">🎵 เพลงพื้นหลัง</div>
-        <p style="font-size:11px;color:var(--tm);margin-bottom:14px;line-height:1.7">เลือกวิธีใส่เพลง BGM — อัปโหลดไฟล์ หรือใส่ URL โดยตรงก็ได้ครับ</p>
+        <div class="sset-title">🎵 Playlist เพลงพื้นหลัง</div>
+        <p style="font-size:11px;color:var(--tm);margin-bottom:14px;line-height:1.7">เพิ่มได้หลายเพลง แอดมินกด ◀ ▶ สลับได้ทุกคนที่เปิดเว็บอยู่จะได้ยินพร้อมกัน</p>
 
-        <!-- TAB SWITCHER -->
-        <div style="display:flex;gap:4px;background:rgba(0,0,0,0.3);border-radius:8px;padding:3px;margin-bottom:16px">
-          <button id="bgtab-file" onclick="bgTab('file')" style="flex:1;padding:7px;border-radius:6px;border:none;cursor:pointer;font-size:11px;letter-spacing:0.1em;font-family:'DM Sans',sans-serif;background:var(--g);color:#fff;transition:all 0.2s">📁 อัปโหลดไฟล์</button>
-          <button id="bgtab-url" onclick="bgTab('url')" style="flex:1;padding:7px;border-radius:6px;border:none;cursor:pointer;font-size:11px;letter-spacing:0.1em;font-family:'DM Sans',sans-serif;background:transparent;color:var(--td);transition:all 0.2s">🔗 ใส่ URL</button>
-        </div>
+        <!-- PLAYLIST -->
+        <div id="playlist-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
 
-        <!-- FILE UPLOAD -->
-        <div id="bgpanel-file">
+        <!-- ADD SONG -->
+        <div style="background:var(--bg3);border:1px solid var(--bdr);border-radius:10px;padding:14px;margin-bottom:14px">
+          <div style="font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--g2);margin-bottom:10px">+ เพิ่มเพลงใหม่</div>
           <div class="fgrp" style="margin-bottom:8px">
-            <label class="flabel">ไฟล์เพลง (MP3, WAV, OGG)</label>
-            <input type="file" accept="audio/*" onchange="saveBgMusic(this)" style="width:100%;background:var(--bg3);border:1px solid var(--bdr);border-radius:8px;padding:10px;color:var(--t);font-size:13px">
+            <label class="flabel">ชื่อเพลง</label>
+            <input class="sinput" id="pl-name" type="text" placeholder="เช่น Lo-fi Chill" style="max-width:100%">
           </div>
-          <p style="font-size:10px;color:var(--tm);margin-bottom:12px;line-height:1.6">⚠ ถ้าไฟล์ใหญ่เกิน ~4MB อาจเต็ม localStorage — ให้สลับไปใช้ URL แทนครับ</p>
-        </div>
-
-        <!-- URL INPUT -->
-        <div id="bgpanel-url" style="display:none">
           <div class="fgrp" style="margin-bottom:8px">
-            <label class="flabel">URL เพลง (Direct MP3 / YouTube)</label>
-            <input class="sinput" id="bgmusic-url" type="url" placeholder="https://example.com/song.mp3" style="max-width:100%;font-size:13px" oninput="previewBgURL()">
+            <label class="flabel">URL เพลง (Dropbox / Direct MP3)</label>
+            <input class="sinput" id="pl-url" type="url" placeholder="https://..." style="max-width:100%;font-size:12px">
           </div>
-          <div style="background:rgba(220,80,80,0.12);border:1px solid rgba(220,80,80,0.3);border-radius:8px;padding:11px 13px;margin-bottom:10px">
-            <div style="font-size:11px;font-weight:600;color:#ff7070;margin-bottom:5px">⚠️ Google Drive ใช้ไม่ได้ครับ</div>
-            <div style="font-size:11px;color:var(--td);line-height:1.7">Google Drive บล็อก CORS ทำให้ browser เล่นเสียงไม่ได้<br><b style="color:#fff">ให้ใช้ Dropbox:</b> อัปโหลดเพลง → Share → Copy link → แปะที่นี่</div>
+          <div style="background:rgba(220,80,80,0.08);border:1px solid rgba(220,80,80,0.2);border-radius:8px;padding:9px 12px;margin-bottom:10px">
+            <div style="font-size:10px;color:var(--td);line-height:1.8">✅ <b>Dropbox</b> (แนะนำ): Share link → Copy → แปะที่นี่<br>⚠️ <b>Google Drive</b>: CORS blocked ใช้ไม่ได้</div>
           </div>
-          <div style="background:rgba(26,107,58,0.08);border:1px solid var(--bdr);border-radius:8px;padding:10px 13px;margin-bottom:10px">
-            <div style="font-size:10px;color:var(--td);line-height:1.9">✅ <b>Dropbox:</b> https://www.dropbox.com/scl/fi/xxx/song.mp3?rlkey=xxx<br>✅ <b>Direct MP3:</b> https://yoursite.com/song.mp3</div>
-          </div>
-          <button class="btn btn-gold btn-sm" onclick="saveBgURL()">💾 บันทึก URL</button>
+          <button class="btn btn-gold btn-sm" onclick="plAddURL()">+ เพิ่มเข้า Playlist</button>
         </div>
 
-        <!-- VOLUME -->
-        <div class="fgrp" style="margin-top:14px;margin-bottom:12px">
+        <!-- VOLUME + CONTROLS -->
+        <div class="fgrp" style="margin-bottom:12px">
           <label class="flabel">ระดับเสียง (Volume)</label>
           <input type="range" id="bgmusic-vol" min="0" max="1" step="0.05" value="0.3" oninput="setBgVol()" style="width:100%;accent-color:var(--g2)">
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" onclick="testBgMusic()">▶ ทดสอบเล่น</button>
-          <button class="btn btn-ghost btn-sm" onclick="stopBgMusic();toast('หยุดแล้ว','หยุดเพลงพื้นหลัง')">⏹ หยุด</button>
-          <button class="btn btn-danger btn-sm" onclick="removeBgMusic()">🗑 ลบเพลง</button>
+        <!-- NOW PLAYING + PREV/NEXT -->
+        <div id="pl-player" style="display:none;background:rgba(26,107,58,0.08);border:1px solid var(--bdr2);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:10px;letter-spacing:0.3em;color:var(--tm);text-transform:uppercase;margin-bottom:6px">กำลังเล่น</div>
+          <div id="pl-now" style="font-size:14px;color:var(--t);margin-bottom:10px;font-weight:500">—</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="plPrev()" style="flex:1">◀ ก่อนหน้า</button>
+            <button class="btn btn-ghost btn-sm" onclick="stopBgMusic();toast('หยุดแล้ว','หยุดเพลงพื้นหลัง')" style="padding:9px 12px">⏹</button>
+            <button class="btn btn-ghost btn-sm" onclick="plNext()" style="flex:1">ถัดไป ▶</button>
+          </div>
         </div>
-        <div id="bgmusic-status" style="margin-top:10px;font-size:12px;color:var(--tm)">ยังไม่มีเพลง</div>
+        <div id="bgmusic-status" style="font-size:12px;color:var(--tm)">ยังไม่มีเพลงใน Playlist</div>
       </div>
       <div class="sset">
         <div class="sset-title">📣 ประกาศ (Announcement Banner)</div>
@@ -1089,7 +1154,23 @@ async function load(){
     if(newSettings.rules) D.rules=newSettings.rules;
     // Supabase column ชื่อ bgmusic (lowercase)
     const _bgVal = newSettings.bgmusic!==undefined ? newSettings.bgmusic : newSettings.bgMusic;
-    if(_bgVal!==undefined) D.bgMusic=_bgVal;
+    if(_bgVal!==undefined){
+      const oldIdx = D.bgMusic && D.bgMusic.current;
+      const oldPlaylist = JSON.stringify((D.bgMusic&&D.bgMusic.playlist)||[]);
+      D.bgMusic = _bgVal;
+      if(!adminIn){
+        const newList = plGetList();
+        const newIdx = plGetCurrent();
+        const newSrc = newList[newIdx]&&newList[newIdx].url;
+        const listChanged = JSON.stringify(newList)!==oldPlaylist;
+        const trackChanged = newIdx!==oldIdx || listChanged;
+        // ตรวจว่าเพลงที่กำลังเล่นอยู่เป็นเพลงเดิมหรือเปล่า (ป้องกัน echo restart)
+        const alreadyPlayingThis = _bgAudio && !_bgAudio.paused &&
+          _bgAudio.src && newSrc && _bgAudio.src.includes(encodeURIComponent(newSrc).slice(0,30));
+        if(newSrc && trackChanged && !alreadyPlayingThis){ startBgMusic(newSrc); }
+        if(!newList.length && _bgAudio){ _bgAudio.pause(); _bgAudio=null; }
+      }
+    }
     if(newSettings.visitors!==undefined){
       const el=document.getElementById('lvisit');
       if(el) el.textContent=newSettings.visitors;
@@ -1158,7 +1239,8 @@ function initLoader(){
     }
     // ── เริ่มเพลงพื้นหลังทันทีใน user gesture (ก่อน setTimeout) ──
     // เพื่อให้ผ่าน Autoplay Policy ของ browser มือถือ
-    startBgMusic();
+    const _pl=plGetList(); const _plSrc=_pl[plGetCurrent()]&&_pl[plGetCurrent()].url;
+    startBgMusic(_plSrc||undefined);
     const tap=document.getElementById('ld-tap');
     if(tap)tap.style.opacity='0';
     setTimeout(()=>{
@@ -1170,9 +1252,8 @@ function initLoader(){
         document.getElementById('fab').style.display='block';
         document.getElementById('pbar').style.display='block';
         updateCounts();
-        // แสดง countdown ก่อนเสมอ แล้วค่อยเช็คว่าต้องไป landing ไหม
-        showCountdown();
-        setTimeout(()=>checkOpen(), 100);
+        // checkOpen จะเลือกหน้าที่ถูกต้องเองโดยไม่กระพริบ
+        checkOpen();
         // Init visual effects
         startGlitchLoop();
         addSoundToButtons();
@@ -1201,11 +1282,42 @@ function checkOpen(){
   show('s-land');
   updateAnnBanner();
   updateLandingCTA();
+  updateLandingSchedInfo();
 }
 function updateLandingCTA(){
   // ซ่อน/แสดงปุ่มเริ่มสมัครตาม toggle
   const cta=document.getElementById('land-cta');
   if(cta) cta.style.display=D.set.open?'':'none';
+}
+function updateLandingSchedInfo(){
+  const el=document.getElementById('land-sched-info');
+  if(!el)return;
+  let rows='';
+  if(D.set.closeDt){
+    const c=new Date(D.set.closeDt);
+    rows+=`<div style="display:inline-flex;width:fit-content;align-items:center;gap:10px;padding:6px 16px;border:1px solid rgba(220,60,60,0.25);border-radius:99px;background:rgba(220,60,60,0.06)">
+      <span style="width:6px;height:6px;border-radius:50%;background:#c45;flex-shrink:0"></span>
+      <span style="font-size:11px;color:rgba(240,245,242,0.45);letter-spacing:0.04em">ปิดรับเทส</span>
+      <span style="font-size:11px;font-weight:500;color:#e07070;letter-spacing:0.04em">${fmtDt(c)}</span>
+    </div>`;
+  }
+  if(D.set.annDt){
+    const a=new Date(D.set.annDt);
+    rows+=`<div style="display:inline-flex;width:fit-content;align-items:center;gap:10px;padding:6px 16px;border:1px solid var(--bdr2);border-radius:99px;background:rgba(26,107,58,0.06)">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--g2);flex-shrink:0"></span>
+      <span style="font-size:11px;color:rgba(240,245,242,0.45);letter-spacing:0.04em">ประกาศผล</span>
+      <span style="font-size:11px;font-weight:500;color:var(--g2);letter-spacing:0.04em">${fmtDt(a)}</span>
+    </div>`;
+  }
+  el.innerHTML=rows;
+  el.style.display=rows?'flex':'none';
+}
+function fmtDt(d){
+  const day=d.getDate().toString().padStart(2,'0');
+  const mon=(d.getMonth()+1).toString().padStart(2,'0');
+  const hh=d.getHours().toString().padStart(2,'0');
+  const mm=d.getMinutes().toString().padStart(2,'0');
+  return `${day}/${mon}/${d.getFullYear()} · ${hh}:${mm} น.`;
 }
 function updateAnnBanner(){
   const bar=document.getElementById('ann-bar');
@@ -1235,6 +1347,30 @@ function showCountdown(){
     lbl.innerHTML=`เปิดรับสมัคร <span>${day}/${mon}/${yr} เวลา ${hh}:${mm2} น.</span>`;
   } else if(lbl){
     lbl.innerHTML=D.set.open?'<span>ยังไม่ได้กำหนดเวลา</span>':'<span>ปิดรับสมัครชั่วคราว</span>';
+  }
+
+  // แสดงปิดรับเทส + ประกาศผล บนหน้า countdown
+  const schedInfo=document.getElementById('cd-sched-info');
+  if(schedInfo){
+    let rows='';
+    if(D.set.closeDt){
+      const c=new Date(D.set.closeDt);
+      rows+=`<div style="display:inline-flex;width:fit-content;align-items:center;gap:10px;padding:7px 18px;border:1px solid rgba(220,60,60,0.25);border-radius:99px;background:rgba(220,60,60,0.06)">
+        <span style="width:6px;height:6px;border-radius:50%;background:#c45;flex-shrink:0"></span>
+        <span style="font-size:12px;color:rgba(240,245,242,0.5);letter-spacing:0.05em">ปิดรับเทส</span>
+        <span style="font-size:12px;font-weight:500;color:#e07070;letter-spacing:0.05em">${fmtDt(c)}</span>
+      </div>`;
+    }
+    if(D.set.annDt){
+      const a=new Date(D.set.annDt);
+      rows+=`<div style="display:inline-flex;width:fit-content;align-items:center;gap:10px;padding:7px 18px;border:1px solid var(--bdr2);border-radius:99px;background:rgba(26,107,58,0.06)">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--g2);flex-shrink:0"></span>
+        <span style="font-size:12px;color:rgba(240,245,242,0.5);letter-spacing:0.05em">ประกาศผล</span>
+        <span style="font-size:12px;font-weight:500;color:var(--g2);letter-spacing:0.05em">${fmtDt(a)}</span>
+      </div>`;
+    }
+    schedInfo.innerHTML=rows;
+    schedInfo.style.display=rows?'flex':'none';
   }
 
   if(cdTimer)clearInterval(cdTimer);
@@ -1412,6 +1548,20 @@ async function sendDCStatus(e,ok){
 // ADMIN
 // ────────────────────────────────────────
 function goAdmin(){show('s-alog');}
+function togglePwdEye(){
+  const inp=document.getElementById('apwd');
+  const btn=document.getElementById('apwd-eye');
+  if(!inp||!btn)return;
+  if(inp.type==='password'){
+    inp.type='text';
+    btn.textContent='🙈';
+    btn.style.color='var(--g2)';
+  } else {
+    inp.type='password';
+    btn.textContent='👁';
+    btn.style.color='var(--td)';
+  }
+}
 function doLogin(){
   if(document.getElementById('apwd').value===APW){adminIn=true;show('s-adm');renderAdmin();}
   else toast('รหัสผ่านผิด','ลองใหม่อีกครั้งครับ');
@@ -1578,21 +1728,15 @@ function loadSet(){
   if(D.email&&(D.email.pubkey||D.email.key)){try{emailjs.init(D.email.pubkey||D.email.key);}catch(e){}}
   if(D.discord&&D.discord.webhook){const dw=document.getElementById('dc-webhook');if(dw)dw.value=D.discord.webhook;}
   updateSchedPreview();
-  if(D.bgMusic&&D.bgMusic.name){
-    const st=document.getElementById('bgmusic-status');
-    const bv=document.getElementById('bgmusic-vol');
-    if(bv&&D.bgMusic.vol)bv.value=D.bgMusic.vol;
-    if(D.bgMusic.url){
-      bgTab('url');
-      const ui=document.getElementById('bgmusic-url');
-      const displayUrl=D.bgMusic.name||D.bgMusic.url;
-      if(ui)ui.value=displayUrl;
-      if(st)st.innerHTML='<span style="color:var(--g2)">✓ URL บันทึกแล้ว — ทุกคนที่เข้าเว็บจะได้ยิน</span>';
-    } else {
-      if(st)st.innerHTML=`<span style="color:var(--g2)">✓ ${D.bgMusic.name}</span>`;
-    }
-    // เริ่มเล่นเพลงทันทีในแอดมิน
-    startBgMusic();
+  // Playlist
+  const bv=document.getElementById('bgmusic-vol');
+  if(bv&&D.bgMusic&&D.bgMusic.vol)bv.value=D.bgMusic.vol;
+  plRender();
+  // เริ่มเล่นเพลงเฉพาะตอนยังไม่มีเสียงเล่นอยู่ (ป้องกัน restart ทุกครั้งที่ loadSet ถูกเรียก)
+  if(!_bgAudio||_bgAudio.paused){
+    const pl=plGetList();
+    if(pl.length){ startBgMusic(pl[plGetCurrent()]&&pl[plGetCurrent()].url); }
+    else if(D.bgMusic&&(D.bgMusic.data||D.bgMusic.url)){ startBgMusic(); } // legacy fallback
   }
 }
 function updateSchedPreview(){
@@ -2057,105 +2201,168 @@ function selChFX(id,val,el){
 // ────────────────────────────────────────
 // BG MUSIC
 // ────────────────────────────────────────
+// PLAYLIST SYSTEM
+// ────────────────────────────────────────
 let _bgAudio = null;
+let _bgMusicURL = null;
+
+// D.bgMusic structure: { playlist:[{name,url},...], current:0, vol:0.3 }
+function plGetList(){ return (D.bgMusic&&D.bgMusic.playlist)||[]; }
+function plGetCurrent(){ return (D.bgMusic&&D.bgMusic.current)||0; }
+function plGetVol(){ return (D.bgMusic&&D.bgMusic.vol)||0.3; }
+
+function plSave(){ save(); }
+
+function plRender(){
+  const list=plGetList();
+  const cur=plGetCurrent();
+  const el=document.getElementById('playlist-list');
+  const st=document.getElementById('bgmusic-status');
+  const player=document.getElementById('pl-player');
+  const nowEl=document.getElementById('pl-now');
+  if(!el)return;
+  if(!list.length){
+    el.innerHTML='';
+    if(st)st.textContent='ยังไม่มีเพลงใน Playlist';
+    if(player)player.style.display='none';
+    return;
+  }
+  if(st)st.textContent=`${list.length} เพลงใน Playlist`;
+  if(player)player.style.display='block';
+  if(nowEl)nowEl.textContent=list[cur]?list[cur].name:'—';
+  el.innerHTML=list.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${i===cur?'rgba(26,107,58,0.12)':'var(--bg3)'};border:1px solid ${i===cur?'var(--bdr2)':'var(--bdr)'};border-radius:8px">
+      <div onclick="plPlay(${i})" style="width:28px;height:28px;border-radius:50%;background:${i===cur?'var(--g)':'rgba(26,107,58,0.2)'};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:12px">${i===cur?'▶':'▷'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:${i===cur?'var(--t)':'var(--td)'};font-weight:${i===cur?500:400};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+        <div style="font-size:10px;color:var(--tm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.url}</div>
+      </div>
+      <button onclick="plRemove(${i})" style="background:none;border:none;color:rgba(220,60,60,0.5);cursor:pointer;font-size:16px;flex-shrink:0;padding:4px">✕</button>
+    </div>`).join('');
+}
+
+function plAddURL(){
+  const name=(document.getElementById('pl-name')||{}).value||'';
+  const raw=(document.getElementById('pl-url')||{}).value||'';
+  if(!raw.trim()){toast('กรุณาใส่ URL','วางลิงก์เพลงก่อนครับ');return;}
+  const url=fixDriveURL(raw.trim());
+  const label=name.trim()||url.split('/').pop().split('?')[0]||'เพลง';
+  if(!D.bgMusic||!D.bgMusic.playlist) D.bgMusic={playlist:[],current:0,vol:plGetVol()};
+  D.bgMusic.playlist.push({name:label,url});
+  plSave();
+  plRender();
+  // clear inputs
+  const ni=document.getElementById('pl-name'); if(ni)ni.value='';
+  const ui=document.getElementById('pl-url'); if(ui)ui.value='';
+  toast('🎵 เพิ่มแล้ว',`"${label}" เข้า Playlist แล้ว`);
+}
+
+function plPlay(i){
+  if(!D.bgMusic||!D.bgMusic.playlist)return;
+  D.bgMusic.current=i;
+  plSave();
+  plRender();
+  const src=D.bgMusic.playlist[i]&&D.bgMusic.playlist[i].url;
+  if(src) startBgMusic(src);
+}
+
+function plNext(){
+  const list=plGetList();
+  if(!list.length)return;
+  const next=(plGetCurrent()+1)%list.length;
+  plPlay(next);
+}
+
+function plPrev(){
+  const list=plGetList();
+  if(!list.length)return;
+  const prev=(plGetCurrent()-1+list.length)%list.length;
+  plPlay(prev);
+}
+
+function plRemove(i){
+  if(!D.bgMusic||!D.bgMusic.playlist)return;
+  const wasPlaying=(i===D.bgMusic.current);
+  D.bgMusic.playlist.splice(i,1);
+  if(!D.bgMusic.playlist.length){
+    D.bgMusic.current=0;
+    stopBgMusic();
+  } else {
+    D.bgMusic.current=Math.min(D.bgMusic.current,D.bgMusic.playlist.length-1);
+    if(wasPlaying) plPlay(D.bgMusic.current);
+  }
+  plSave();
+  plRender();
+  toast('ลบแล้ว','ลบเพลงออกจาก Playlist แล้ว');
+}
+
+// ── ป้องกัน conflict เมื่อเพลงจบพร้อมกันหลายคน ──
+// แต่ละ session มี ID ของตัวเอง คนที่ joinedAt เก่าสุด (leader) จะเป็นคน broadcast
+const _sessionId = Date.now()+'_'+Math.random().toString(36).slice(2,7);
+let _sessionJoinedAt = Date.now();
+// บันทึก session ลง Supabase realtime presence (ถ้ามี) หรือใช้ simple approach:
+// leader = คนที่ _sessionJoinedAt น้อยที่สุดในกลุ่ม → เราจะใช้วิธีง่ายกว่า:
+// ทุกคนเล่นเองได้ แต่ save() เฉพาะคนที่เพลงจบก่อน (debounce 2 วิ)
+let _nextBroadcastLock = false;
+
 function startBgMusic(url){
-  const src=url||(D.bgMusic&&(D.bgMusic.data||D.bgMusic.url))||_bgMusicURL;
+  const list=plGetList();
+  const src=url||(list[plGetCurrent()]&&list[plGetCurrent()].url)||
+    (D.bgMusic&&(D.bgMusic.data||D.bgMusic.url))||_bgMusicURL;
   if(!src)return;
   try{
     if(_bgAudio){_bgAudio.pause();_bgAudio=null;}
     _bgAudio=new Audio(src);
-    _bgAudio.loop=true;
-    _bgAudio.volume=(D.bgMusic&&D.bgMusic.vol)||0.3;
+    _bgAudio.loop=false;
+    _bgAudio.volume=plGetVol();
+    // พอเพลงจบ → เล่นเพลงถัดไป + broadcast ให้ทุกคนได้ยินเหมือนกัน
+    _bgAudio.onended=()=>{
+      const pl=plGetList();
+      if(!pl.length)return;
+      const next=(plGetCurrent()+1)%pl.length;
+      if(D.bgMusic) D.bgMusic.current=next;
+      plRender();
+      const nextSrc=pl[next]&&pl[next].url;
+      if(nextSrc) startBgMusic(nextSrc);
+      // broadcast เฉพาะ bgMusic field ผ่าน Supabase ด้วย debounce lock 2 วิ
+      // ป้องกันทุก user save พร้อมกัน → คนแรกที่ถึงได้ lock
+      // FIX: ใช้ sbSaveSettings เฉพาะ bgMusic แทน save() ทั้งก้อน
+      // เพื่อป้องกัน overwrite settings/theme/email ที่ admin กำลังแก้อยู่
+      if(!_nextBroadcastLock){
+        _nextBroadcastLock=true;
+        if(D.bgMusic) sbSaveSettings({bgMusic:D.bgMusic}).catch(e=>console.warn('pl-save:',e));
+        setTimeout(()=>{ _nextBroadcastLock=false; }, 2000);
+      }
+    };
     _bgAudio.play().catch(e=>console.warn('bgmusic:',e));
   }catch(e){}
 }
 function stopBgMusic(){
   if(_bgAudio){_bgAudio.pause();_bgAudio=null;}
 }
-function bgTab(t){
-  document.getElementById('bgpanel-file').style.display=t==='file'?'block':'none';
-  document.getElementById('bgpanel-url').style.display=t==='url'?'block':'none';
-  const bf=document.getElementById('bgtab-file'),bu=document.getElementById('bgtab-url');
-  bf.style.background=t==='file'?'var(--g)':'transparent';
-  bf.style.color=t==='file'?'#fff':'var(--td)';
-  bu.style.background=t==='url'?'var(--g)':'transparent';
-  bu.style.color=t==='url'?'#fff':'var(--td)';
-}
-function previewBgURL(){
-  document.getElementById('bgmusic-status').innerHTML='<span style="color:var(--tm)">กด "บันทึก URL" เพื่อใช้งาน</span>';
-}
 function fixDriveURL(url){
   if(url.includes('dropbox.com')){
-    // ลบ st= และ dl= ออกก่อน แล้วเพิ่ม dl=1
     let u=url.replace(/[&?]st=[^&?]*/g,'').replace(/[?&]dl=[01]/g,'');
-    // ถ้า rlkey ยังอยู่ ให้ต่อท้ายด้วย &dl=1 ถ้ามี ? แล้ว
     return u+(u.includes('?')?'&':'?')+'dl=1';
   }
-  // Google Drive (CORS blocked but convert anyway)
   const m1=url.match(/drive\.google\.com\/file\/d\/([^\/\?]+)/);
   if(m1)return 'https://drive.google.com/uc?export=download&id='+m1[1];
   const m2=url.match(/drive\.google\.com\/open\?id=([^&]+)/);
   if(m2)return 'https://drive.google.com/uc?export=download&id='+m2[1];
   return url;
 }
-function saveBgURL(){
-  const raw=(document.getElementById('bgmusic-url')||{}).value||'';
-  if(!raw.trim()){toast('กรุณาใส่ URL','วางลิงก์เพลงก่อนครับ');return;}
-  const url=fixDriveURL(raw.trim());
-  const vol=parseFloat(document.getElementById('bgmusic-vol').value)||0.3;
-  D.bgMusic={name:raw.trim(),url:url,vol:vol};
-  save();
-  document.getElementById('bgmusic-status').innerHTML=`<span style="color:var(--g2)">✓ บันทึก URL แล้ว — กด ▶ ทดสอบเล่น เพื่อตรวจสอบ</span>`;
-  toast('🎵 บันทึกแล้ว','เพลงจาก URL พร้อมเล่นสำหรับทุกคน');
-  startBgMusic(url);
-}
-function testBgMusic(){
-  const src=(D.bgMusic&&(D.bgMusic.data||D.bgMusic.url))||_bgMusicURL;
-  if(!src){toast('ยังไม่มีเพลง','บันทึก URL หรืออัปโหลดไฟล์ก่อนครับ');return;}
-  startBgMusic(src);
-  toast('▶ กำลังเล่น','ถ้าไม่ได้ยิน ลองตรวจสอบ URL หรือ CORS ของไฟล์ครับ');
-}
-let _bgMusicURL=null;
-function saveBgMusic(input){
-  const file=input.files[0];
-  if(!file)return;
-  const st=document.getElementById('bgmusic-status');
-  st.innerHTML=`<span style="color:var(--tm)">⏳ กำลังบันทึก...</span>`;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    const b64=e.target.result; // data:audio/...;base64,...
-    const vol=parseFloat(document.getElementById('bgmusic-vol').value)||0.3;
-    D.bgMusic={name:file.name,vol:vol,data:b64};
-    try{
-      save();
-      st.innerHTML=`<span style="color:var(--g2)">✓ ${file.name}</span>`;
-      toast('🎵 บันทึกแล้ว','ทุกคนที่เปิดเว็บจะได้ยินเพลงด้วย');
-      startBgMusic(b64);
-    }catch(err){
-      // localStorage อาจเต็มถ้าไฟล์ใหญ่มาก
-      D.bgMusic={name:file.name,vol:vol};
-      save();
-      if(_bgMusicURL)URL.revokeObjectURL(_bgMusicURL);
-      _bgMusicURL=URL.createObjectURL(file);
-      st.innerHTML=`<span style="color:#e8a030">⚠ ไฟล์ใหญ่เกินไป บันทึกได้เฉพาะ session นี้</span>`;
-      toast('⚠ ไฟล์ใหญ่เกินไป','ลองใช้ไฟล์เพลงที่เล็กกว่านี้ครับ');
-      startBgMusic(_bgMusicURL);
-    }
-  };
-  reader.readAsDataURL(file);
-}
-function removeBgMusic(){
-  stopBgMusic();
-  D.bgMusic=null;
-  save();
-  document.getElementById('bgmusic-status').innerHTML='<span style="color:var(--tm)">ยังไม่มีเพลง</span>';
-  toast('ลบแล้ว','ลบเพลงพื้นหลังแล้ว');
-}
 function setBgVol(){
   const vol=parseFloat(document.getElementById('bgmusic-vol').value)||0.3;
   if(_bgAudio)_bgAudio.volume=vol;
-  if(D.bgMusic){D.bgMusic.vol=vol;save();}
+  if(D.bgMusic){D.bgMusic.vol=vol;plSave();}
 }
+// legacy stubs (ไม่ได้ใช้แล้วแต่ป้องกัน error ถ้ามี call เก่าหลงเหลือ)
+function bgTab(){}
+function previewBgURL(){}
+function saveBgURL(){}
+function saveBgMusic(){}
+function testBgMusic(){ const s=plGetList()[plGetCurrent()]; if(s)startBgMusic(s.url); else toast('ยังไม่มีเพลง','เพิ่มเพลงใน Playlist ก่อนครับ'); }
+function removeBgMusic(){ if(!D.bgMusic||!D.bgMusic.playlist)return; D.bgMusic.playlist=[];D.bgMusic.current=0;stopBgMusic();plSave();plRender(); }
 function v(id){return (document.getElementById(id)||{}).value||'';}
 function updateCounts(){
   const n=D.subs.length, p=D.subs.filter(s=>s.status==='passed').length;
@@ -2429,6 +2636,81 @@ function downloadStory(){
   link.href=canvas.toDataURL('image/png');
   link.click();
 }
+
+// ────────────────────────────────────────
+// PARTICLE SYSTEM
+// ────────────────────────────────────────
+(function initParticles(){
+  const canvas=document.getElementById('particle-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let W,H,particles=[];
+  const COUNT=38;
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+  resize();
+  window.addEventListener('resize',resize,{passive:true});
+  class Particle{
+    constructor(){this.reset(true);}
+    reset(init){
+      this.x=Math.random()*W;
+      this.y=init?Math.random()*H:H+10;
+      this.r=Math.random()*1.5+0.3;
+      this.speed=Math.random()*0.35+0.1;
+      this.opacity=Math.random()*0.45+0.05;
+      this.drift=(Math.random()-0.5)*0.3;
+      this.pulse=Math.random()*Math.PI*2;
+    }
+    update(){
+      this.y-=this.speed;
+      this.x+=this.drift;
+      this.pulse+=0.02;
+      this.opacity=Math.max(0,(0.3+Math.sin(this.pulse)*0.15));
+      if(this.y<-10)this.reset(false);
+    }
+    draw(){
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(42,153,85,${this.opacity})`;
+      ctx.fill();
+    }
+  }
+  for(let i=0;i<COUNT;i++) particles.push(new Particle());
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{p.update();p.draw();});
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+// ────────────────────────────────────────
+// CURSOR GLOW
+// ────────────────────────────────────────
+(function initCursorGlow(){
+  const el=document.getElementById('cursor-glow');
+  if(!el||('ontouchstart' in window))return; // ไม่ทำบนมือถือ
+  let tx=0,ty=0,cx=0,cy=0,raf;
+  document.addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY;el.style.opacity='1';},{passive:true});
+  document.addEventListener('mouseleave',()=>el.style.opacity='0');
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function animate(){
+    cx=lerp(cx,tx,0.08);cy=lerp(cy,ty,0.08);
+    el.style.left=cx+'px';el.style.top=cy+'px';
+    raf=requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+// ────────────────────────────────────────
+// SCROLL REVEAL
+// ────────────────────────────────────────
+function initScrollReveal(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});
+  },{threshold:0.12});
+  document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+}
+document.addEventListener('DOMContentLoaded',initScrollReveal);
 </script>
 </body>
 </html>
