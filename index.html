@@ -1220,48 +1220,53 @@ function show(id){
 // ────────────────────────────────────────
 let _welcomeAudio=null;
 function initLoader(){
-  setTimeout(()=>{
-    const tap=document.getElementById('ld-tap');
-    if(tap) tap.style.opacity='1';
-  },2000);
-  setTimeout(()=>{
-    const tap=document.getElementById('ld-tap');
-    if(tap) tap.style.opacity='1';
-  },3500);
+  // โหลด welcome audio ล่วงหน้า
   setTimeout(()=>{
     try{_welcomeAudio=new Audio(WELCOME_AUDIO_B64);_welcomeAudio.load();}catch(e){}
   },100);
+
+  // แสดงปุ่ม Enter หลังจาก animation โหลดเสร็จ
+  setTimeout(()=>{
+    const tap=document.getElementById('ld-tap');
+    if(tap){ tap.style.opacity='1'; tap.style.pointerEvents='auto'; }
+  },2200);
+
+  let _entered=false;
   function doEnter(){
+    if(_entered) return; // ป้องกันกดซ้ำ
+    _entered=true;
     // Play welcome audio
     if(_welcomeAudio){
       _welcomeAudio.currentTime=0;
       _welcomeAudio.play().catch(e=>console.warn('audio:',e));
     }
-    // ── เริ่มเพลงพื้นหลังทันทีใน user gesture (ก่อน setTimeout) ──
-    // เพื่อให้ผ่าน Autoplay Policy ของ browser มือถือ
+    // เริ่มเพลงพื้นหลังใน user gesture เพื่อผ่าน Autoplay Policy
     const _pl=plGetList(); const _plSrc=_pl[plGetCurrent()]&&_pl[plGetCurrent()].url;
     startBgMusic(_plSrc||undefined);
     const tap=document.getElementById('ld-tap');
-    if(tap)tap.style.opacity='0';
+    if(tap){ tap.style.opacity='0'; tap.style.pointerEvents='none'; }
+    const el=document.getElementById('s-load');
+    el.style.transition='opacity 0.8s';
+    el.style.opacity='0';
     setTimeout(()=>{
-      const el=document.getElementById('s-load');
-      el.style.transition='opacity 1s';el.style.opacity='0';
-      setTimeout(()=>{
-        el.style.display='none';
-        document.getElementById('hdr').style.display='flex';
-        document.getElementById('fab').style.display='block';
-        document.getElementById('pbar').style.display='block';
-        updateCounts();
-        // checkOpen จะเลือกหน้าที่ถูกต้องเองโดยไม่กระพริบ
-        checkOpen();
-        // Init visual effects
-        startGlitchLoop();
-        addSoundToButtons();
-        initEasterEgg();
-      },1000);
-    },200);
+      el.style.display='none';
+      document.getElementById('hdr').style.display='flex';
+      document.getElementById('fab').style.display='block';
+      document.getElementById('pbar').style.display='block';
+      updateCounts();
+      checkOpen();
+      startGlitchLoop();
+      addSoundToButtons();
+      initEasterEgg();
+    },850);
   }
-  document.getElementById('s-load').addEventListener('click', doEnter, {once:true});
+
+  // ผูกปุ่ม Enter โดยตรง ไม่ใช่ทั้งหน้า
+  const tapBtn = document.getElementById('ld-tap');
+  if(tapBtn){
+    tapBtn.addEventListener('click', doEnter, {once:true});
+    tapBtn.addEventListener('touchend', function(e){ e.preventDefault(); doEnter(); }, {once:true, passive:false});
+  }
 }
 
 // ────────────────────────────────────────
@@ -1612,7 +1617,8 @@ function renderSubs(){
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
         ${e.status==='pending'?`
         <button class="btn btn-gold btn-sm" onclick="approve(${i})">✓ อนุมัติ</button>
-        <button class="btn btn-danger btn-sm" onclick="reject(${i})">✗ ปฏิเสธ</button>`:''}
+        <button class="btn btn-danger btn-sm" onclick="reject(${i})">✗ ปฏิเสธ</button>`:`
+        <button class="btn btn-sm" onclick="resetToPending(${i})" title="ดึงกลับมาเป็น รอพิจารณา" style="background:rgba(255,200,50,0.15);color:#f0c040;border:1px solid rgba(255,200,50,0.4);font-size:11px;padding:7px 12px;font-weight:500">↩ ดึงกลับ</button>`}
         <button class="btn btn-sm" onclick="deleteSub(${i})" style="background:rgba(100,100,100,0.15);color:var(--tm);border:1px solid rgba(255,255,255,0.1);font-size:10px;padding:6px 10px">🗑 ลบ</button>
       </div>`;
     const noteBlock=`<div style="margin-top:10px;display:flex;gap:6px;align-items:center">
@@ -1654,6 +1660,14 @@ function reject(i){
   toast('ปฏิเสธแล้ว',`@${D.subs[i].ig} ไม่ผ่าน`);
 }
 
+function resetToPending(i){
+  if(!confirm(`รีเซ็ต @${D.subs[i].ig} กลับเป็น "รอพิจารณา" ไหมครับ?\n(ไม่มีอีเมลส่งออก)`))return;
+  D.subs[i].status='pending';
+  saveLocal();
+  if(D.subs[i].id) sbUpdateSubmission(D.subs[i].id,{status:'pending'}).catch(e=>console.warn('reset error:',e));
+  renderSubs();updateCounts();
+  toast('รีเซ็ตแล้ว',`@${D.subs[i].ig} กลับเป็นรอพิจารณา`);
+}
 function deleteSub(i){
   if(!confirm('ลบผู้สมัครคนนี้ออกเลยไหมครับ?'))return;
   const sbId=D.subs[i].id;
@@ -1877,31 +1891,37 @@ async function testEmail(){
     st.innerHTML=`<span style="color:#c45">✗ ส่งไม่สำเร็จ: ${e.text||e.message||JSON.stringify(e)}</span>`;
   }
 }
-async function emailNotify(sub,ok){
-  if(!checkEmailReady()){
-    console.log('EMAIL SKIPPED (not configured)');return;
+// ─── EMAIL QUEUE (ป้องกัน rate limit ตอนกดรัวๆ) ───
+let _emailQueue = [], _emailRunning = false;
+function emailNotify(sub, ok){
+  if(!checkEmailReady()){ console.log('EMAIL SKIPPED (not configured)'); return; }
+  if(!sub.email){ console.log('EMAIL SKIPPED (no email)'); return; }
+  _emailQueue.push({sub, ok});
+  if(!_emailRunning) _runEmailQueue();
+}
+async function _runEmailQueue(){
+  _emailRunning = true;
+  while(_emailQueue.length > 0){
+    const {sub, ok} = _emailQueue.shift();
+    await _doEmailNotify(sub, ok);
+    if(_emailQueue.length > 0) await new Promise(r=>setTimeout(r, 1200));
   }
-  if(!sub.email){console.log('EMAIL SKIPPED (no email)');return;}
+  _emailRunning = false;
+}
+async function _doEmailNotify(sub, ok){
   const subject = ok
     ? `✦ ยินดีด้วย! คุณผ่านการทดสอบ THE ZESTORA Gen ${sub.gen}`
     : `THE ZESTORA Gen ${sub.gen} · ผลการทดสอบ`;
   const message = ok
     ? `สวัสดีครับ ${sub.nick} 👋\n\nยินดีด้วยครับ! คุณผ่านการทดสอบเข้าร่วม THE ZESTORA Gen ${sub.gen} แล้ว 🎉\n\nหมายเลขผู้สมัคร: #${sub.num}\nIG: @${sub.ig}\n\nกดลิ้งค์ด้านล่างเพื่อร่วมแก๊งได้เลย:\n${GANG}\n\nแอดมันจะทักไปทาง IG ด้วยนะครับ\nอย่าลืมเปิด IG เป็นสาธารณะไว้ด้วย\n\n— THE ZESTORA Team`
     : `สวัสดีครับ ${sub.nick} (@${sub.ig})\n\nขอบคุณที่สมัครเข้าร่วม THE ZESTORA Gen ${sub.gen} ครับ\n\nรอบนี้ยังไม่ผ่านการคัดเลือก ขอบคุณที่ให้ความสนใจนะครับ\n\n— THE ZESTORA`;
-  const extra = {
-    nick: sub.nick,
-    gen: sub.gen,
-    num: sub.num,
-    ig: sub.ig,
-    gang_link: GANG,
-    ok: ok
-  };
+  const extra = { nick:sub.nick, gen:sub.gen, num:sub.num, ig:sub.ig, gang_link:GANG, ok };
   try{
     await sendEJS(sub.email, subject, message, extra);
-    toast('📧 ส่งอีเมลแล้ว',`แจ้งผลไปที่ ${sub.email}`);
+    toast('📧 ส่งอีเมลแล้ว', `แจ้งผลไปที่ ${sub.email}`);
   }catch(err){
     console.error('EmailJS error:',err);
-    toast('ส่งอีเมลไม่ได้',`${err.text||err.message||'เช็คตั้งค่า EmailJS'}`);
+    toast('ส่งอีเมลไม่ได้', `${err.text||err.message||'เช็คตั้งค่า EmailJS'}`);
   }
 }
 // ────────────────────────────────────────
@@ -2437,38 +2457,41 @@ function toast(title,msg){
 // INIT
 // ────────────────────────────────────────
 window.addEventListener('load',async ()=>{
-  await load();
-  // เช็ค ?ig=xxx จาก URL → เปิดหน้าสถานะอัตโนมัติ
   const urlParams=new URLSearchParams(location.search);
   const igParam=urlParams.get('ig');
   if(igParam){
+    loadLocal(); applyStoredTheme();
     document.getElementById('s-load').style.display='none';
     show('s-status');
     document.getElementById('status-ig').value=igParam;
-    // รอ data โหลดก่อนค่อย checkStatus
-    setTimeout(()=>checkStatus(), 400);
+    load().catch(e=>console.warn(e));
+    setTimeout(()=>checkStatus(), 800);
     return;
   }
   if(location.hash==='#admin'){
+    loadLocal(); applyStoredTheme();
     document.getElementById('s-load').style.display='none';
     show('s-alog');
     document.getElementById('pbar').style.display='block';
-    // load visitor count for admin + refresh realtime
+    load().catch(e=>console.warn(e));
     try{
       const v=await sbGetVisitors();
       const el=document.getElementById('st-visit');
       if(el) el.textContent=v;
-      // Refresh ทุก 15 วิสำหรับ admin
       setInterval(async()=>{
         try{const vv=await sbGetVisitors();if(el)el.textContent=vv;}catch(e){}
       },15000);
     }catch(e){}
   } else {
+    // ── เริ่ม loader ทันที ไม่รอ Supabase ──
+    loadLocal();
+    applyStoredTheme();
     initLoader();
-    // Count visitor (non-admin only)
     updateVisitorCount();
-    // Track presence (online now)
     initPresence();
+    // โหลด Supabase ใน background พร้อม timeout 8 วิ
+    const loadTimeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
+    Promise.race([load(), loadTimeout]).catch(e=>console.warn('Supabase load:',e));
   }
 });
 
